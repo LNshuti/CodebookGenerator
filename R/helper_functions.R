@@ -161,18 +161,45 @@ codebookVisualize <- function(var, varName) { # OAK 20180720 rename to codebookF
   numUnique <- length(unique(var))
   
   #if there are fewer than 10 levels or it's a character/factor, we'll use a bar
-  if (numUnique <= 10 | varClass %in% c("factor", "character")) {
-    
+  if (varClass %in% c("Date")) {
     vis <- sprintf(
-       "dftest[,'%s'] <- factor(dftest[['%s']])\n
-
-          ggplot(data = na.omit(dftest)) +
-            geom_bar(aes(%s)) +
-            theme_minimal()",
-       paste0(varName, "_new"),
-       varName,
-       paste0(varName, "_new")
+      "dftest[,'%s'] <- dftest[['%s']]\n
+      
+      ggplot(data = na.omit(dftest)) +
+      geom_histogram(aes(%s), color = 'black', bins = 50) +
+      scale_x_date(labels = scales::date_format('%%Y-%%b'), date_breaks = '3 months') +
+      theme_minimal() + 
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))",
+      varName, 
+      varName, 
+      varName
     )
+  } else if (numUnique <= 10 | varClass %in% c("factor", "character")) {
+    
+    if (!all(is.na(as.Date(as.character(var))))) {
+      vis <- sprintf(
+        "dftest[,'%s'] <- as.Date(dftest[['%s']])\n
+
+         ggplot(data = na.omit(dftest)) +
+           geom_histogram(aes(%s), color = 'black', bins = 50) +
+           theme_minimal() +
+           scale_x_date(labels = date_format('%Y-%b'), breaks = '1 month')",
+        varName, 
+        varName, 
+        varName
+      )
+    } else {
+      vis <- sprintf(
+        "dftest[,'%s'] <- factor(dftest[['%s']])\n
+        
+        ggplot(data = na.omit(dftest)) +
+        geom_bar(aes(%s)) +
+        theme_minimal()",
+        paste0(varName, "_new"),
+        varName,
+        paste0(varName, "_new")
+      )
+    }
   } else {
     #all other variables get a histogram
     vis <- sprintf(
@@ -210,26 +237,6 @@ codebookDataTableSummarize <- function(var) { # OAK 20180720 add own metadata
     p25 = quantile(var, 0.25, na.rm = TRUE)
     p0 = quantile(var, 0, na.rm = TRUE)
     
-    # results <- data.frame(
-    #   Feature = c(
-    #     "Mean",
-    #     "Standard Deviation",
-    #     "100% (Max)",
-    #     "75%",
-    #     "50% (Median)",
-    #     "25%",
-    #     "0% (Min)"), 
-    #   Results = c(
-    #     varMean,
-    #     varSD,
-    #     p100,
-    #     p75,
-    #     p50,
-    #     p25,
-    #     p0
-    #   )
-    # )
-    
     results <- data.frame(
       Statistic = c(
         "Mean",
@@ -250,14 +257,55 @@ codebookDataTableSummarize <- function(var) { # OAK 20180720 add own metadata
         p100
       )
     )
+  } else if (varClass %in% c("Date")) {
+    varMean = mean(var, na.rm = TRUE)
+    p100 = max(var, na.rm = TRUE)
+    p50 = median(var, na.rm = TRUE)
+    p0 = min(var, na.rm = TRUE)
     
-    
-  }
-  else {
-    x <- as.data.frame(table(var))
-    x$percent <- x$Freq / length(var)
-    x$validPercent <- x$Freq / sum(!is.na(var))
-    results <- x
+    results <- data.frame(
+      Statistic = c(
+        "Mean",
+        "Min",
+        "Median",
+        "Max"
+      ), 
+      Value = c(
+        varMean,
+        p0,
+        p50,
+        p100
+      )
+    )
+  } else {
+    if (!all(is.na(as.Date(as.character(var))))) {
+      var <- as.Date(var)
+      
+      varMean = mean(var, na.rm = TRUE)
+      p100 = max(var, na.rm = TRUE)
+      p50 = median(var, na.rm = TRUE)
+      p0 = min(var, na.rm = TRUE)
+      
+      results <- data.frame(
+        Statistic = c(
+          "Mean",
+          "Min",
+          "Median",
+          "Max"
+        ), 
+        Value = c(
+          varMean,
+          p0,
+          p50,
+          p100
+        )
+      )
+    } else {
+      x <- as.data.frame(table(var))
+      x$percent <- x$Freq / length(var)
+      x$validPercent <- x$Freq / sum(!is.na(var))
+      results <- x
+    }
   }
   return(results)
 }

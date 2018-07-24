@@ -126,7 +126,9 @@ createCodebook <- function(df, outname = "test", savein = "~/dev", overwrite = T
     )
     
     # added by OAK 20180720: print variable comments
-    writer(paste0('\n**Comments:** ', attr(var, "comments")))
+    if (!is.null(attr(var, "comments"))) {
+      writer(paste0('\n**Comments:** ', attr(var, "comments")))
+    }
     
     # added by OAK 20180720: print variable derivation
     if (!is.null(attr(var, "derivation"))) {
