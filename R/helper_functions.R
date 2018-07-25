@@ -134,7 +134,7 @@ codebookMetadataSummarize <- function(var) { # OAK 20180720 modify with own meta
     "%)"
   )
   numUnique = length(unique(var))
-  is.derived <- attr(var, "is.derived")
+  is.derived <- ifelse(is.null(attr(var, "is.derived")), "FALSE", attr(var, "is.derived"))
 
   # Construct dataset of basic information
   results <- data.frame(
@@ -176,19 +176,19 @@ codebookVisualize <- function(var, varName) { # OAK 20180720 rename to codebookF
     )
   } else if (numUnique <= 10 | varClass %in% c("factor", "character")) {
     
-    if (!all(is.na(as.Date(as.character(var))))) {
-      vis <- sprintf(
-        "dftest[,'%s'] <- as.Date(dftest[['%s']])\n
-
-         ggplot(data = na.omit(dftest)) +
-           geom_histogram(aes(%s), color = 'black', bins = 50) +
-           theme_minimal() +
-           scale_x_date(labels = date_format('%Y-%b'), breaks = '1 month')",
-        varName, 
-        varName, 
-        varName
-      )
-    } else {
+    # if (!all(is.na(as.Date(as.character(var))))) {
+    #   vis <- sprintf(
+    #     "dftest[,'%s'] <- as.Date(dftest[['%s']])\n
+    # 
+    #      ggplot(data = na.omit(dftest)) +
+    #        geom_histogram(aes(%s), color = 'black', bins = 50) +
+    #        theme_minimal() +
+    #        scale_x_date(labels = date_format('%Y-%b'), breaks = '1 month')",
+    #     varName, 
+    #     varName, 
+    #     varName
+    #   )
+    # } else {
       vis <- sprintf(
         "dftest[,'%s'] <- factor(dftest[['%s']])\n
         
@@ -199,8 +199,7 @@ codebookVisualize <- function(var, varName) { # OAK 20180720 rename to codebookF
         varName,
         paste0(varName, "_new")
       )
-    }
-  } else {
+    } else {
     #all other variables get a histogram
     vis <- sprintf(
        "var <- dftest[['%s']]\n
@@ -277,47 +276,51 @@ codebookDataTableSummarize <- function(var) { # OAK 20180720 add own metadata
         p100
       )
     )
-  } else {
-    if (!all(is.na(as.Date(as.character(var))))) {
-      var <- as.Date(var)
-      
-      varMean = mean(var, na.rm = TRUE)
-      p100 = max(var, na.rm = TRUE)
-      p50 = median(var, na.rm = TRUE)
-      p0 = min(var, na.rm = TRUE)
-      
-      results <- data.frame(
-        Statistic = c(
-          "Mean",
-          "Min",
-          "Median",
-          "Max"
-        ), 
-        Value = c(
-          varMean,
-          p0,
-          p50,
-          p100
-        )
-      )
-    } else {
+  } 
+  # else {
+  #   if (!all(is.na(as.Date(as.character(var))))) {
+  #     var <- as.Date(var)
+  #     
+  #     varMean = mean(var, na.rm = TRUE)
+  #     p100 = max(var, na.rm = TRUE)
+  #     p50 = median(var, na.rm = TRUE)
+  #     p0 = min(var, na.rm = TRUE)
+  #     
+  #     results <- data.frame(
+  #       Statistic = c(
+  #         "Mean",
+  #         "Min",
+  #         "Median",
+  #         "Max"
+  #       ), 
+  #       Value = c(
+  #         varMean,
+  #         p0,
+  #         p50,
+  #         p100
+  #       )
+  #     )
+  #   } else {
+  else {
       x <- as.data.frame(table(var))
       x$percent <- x$Freq / length(var)
       x$validPercent <- x$Freq / sum(!is.na(var))
       results <- x
+      colnames(results) <- c("Level", "Frequency", "Percent", "Valid Percent")
     }
-  }
   return(results)
 }
 
 calcSummaryTable <- function(df) { # OAK 20180720 add own metadata
   #construct a dataset of labels, variables, class, unique, and missings
   # vars <- names(df)
-  vars <- sapply(names(df), function(x) paste0('[', x, '](#', x, ')'))
+  vars <- sapply(names(df), function(x) paste0('[', x, '](#', x, ')')) # this includes the link to the section
+  
   uniques <- sapply(
     df, 
     function(x) length(unique(x))
   )
+  
   missings <- sapply(
     df, 
     # function(x) sum(is.na(x)) / length(x)
@@ -325,7 +328,8 @@ calcSummaryTable <- function(df) { # OAK 20180720 add own metadata
   )
   is.derived <- sapply(
     df,
-    function(x) attr(x, "is.derived")
+    #function(x) attr(x, "is.derived")
+    function(x) ifelse(is.null(attr(x, "is.derived")), "FALSE", attr(x, "is.derived"))
   )
   labs <- sapply(
     df, 
@@ -345,10 +349,10 @@ calcSummaryTable <- function(df) { # OAK 20180720 add own metadata
   #if all labels are missing
   if (length(vars) == labMissing) {
     sumTab <- data.frame(
-      Variable = vars, 
-      Class = classes, 
-      Unique = uniques, 
-      Missing = missings, 
+      Variable = vars,
+      Class = classes,
+      Unique = uniques,
+      Missing = missings,
       Derived = is.derived,
       row.names = NULL
     )
@@ -362,6 +366,6 @@ calcSummaryTable <- function(df) { # OAK 20180720 add own metadata
       Derived = is.derived,
       row.names = NULL
     )
-  }
+ }
   return(sumTab)
 }
