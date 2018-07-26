@@ -195,9 +195,12 @@ codebookVisualize <- function(var, varName) { # OAK 20180720 rename to codebookF
         ggplot(data = na.omit(dftest)) +
         geom_bar(aes(%s)) +
         theme_minimal()",
-        paste0(varName, "_new"),
+        #paste0(varName, "_new"),
+        #varName,
+        #paste0(varName, "_new")
         varName,
-        paste0(varName, "_new")
+        varName,
+        varName
       )
     } else {
     #all other variables get a histogram

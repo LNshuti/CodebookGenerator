@@ -48,3 +48,12 @@ vars_w_proj <- vars_w_proj %>%
   summarize(projects = paste(proj, collapse = ", "))
 
 write.csv(vars_w_proj, file = "~/dev/vars_w_proj.csv", row.names = FALSE)
+
+###
+
+df <- mydat[, c("map.id", "epoch", grep("\\.notes", grep("^np\\.", names(mydat), v = T), invert = T, v = T))]
+
+start_time <- Sys.time()
+createCodebook(df, outname = "neuropsych-all")
+end_time <- Sys.time()
+end_time - start_time
